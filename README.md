@@ -1,13 +1,12 @@
 # BTC_UTXO
-## Bitcoin / UTXO Blockchain Implementation
 
 ## Goal: Self-study on the underlying mechanism of BTC
 
-##Road map:
+## Road map:
 
 Transactions -> UTXO -> Signatures -> Fees -> Blocks -> Proof-of-Work -> Coinbase -> Merkle Tree -> P2P -> Network Consensus
 
-##Progress:
+## Progress:
 
 Transaction / UTXO layer     █████████░ ~85%
 
