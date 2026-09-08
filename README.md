@@ -11,6 +11,30 @@ Block / mining layer         ██████░░░░ ~60%
 
 Consensus / networking       ░░░░░░░░░░ ~0%
 
+Road map:
+
+Transactions
+    ↓
+UTXO
+    ↓
+Signatures
+    ↓
+Fees
+    ↓
+Blocks
+    ↓
+Proof-of-Work
+    ↓
+Coinbase
+    ↓
+Merkle Tree
+    ↓
+P2P Network
+    ↓
+Consensus
+
+
+
 Completed parts VS Unfinished parts
 
 | Area | Status |
