@@ -1,7 +1,7 @@
 # BTC_UTXO
-Bitcoin / UTXO Blockchain Implementation\
+Bitcoin / UTXO Blockchain Implementation
 
-My Goal: Self-study on the underlying mechanism of BTC\
+My Goal: Self-study on the underlying mechanism of BTC
 
 My completed parts VS My unfinished parts
 
