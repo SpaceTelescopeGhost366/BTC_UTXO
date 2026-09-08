@@ -1,6 +1,6 @@
 # BTC_UTXO
 
-## Goal: Self-study on the underlying mechanism of BTC
+## Goal: Reproduce underlying mechanism of BTC
 
 ## Road map:
 
