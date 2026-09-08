@@ -6,7 +6,9 @@ Goal: Self-study on the underlying mechanism of BTC
 Progress:
 
 Transaction / UTXO layer     █████████░ ~85%
+
 Block / mining layer         ██████░░░░ ~60%
+
 Consensus / networking       ░░░░░░░░░░ ~0%
 
 Completed parts VS Unfinished parts
