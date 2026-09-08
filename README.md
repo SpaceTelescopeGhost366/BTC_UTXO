@@ -1,9 +1,15 @@
 # BTC_UTXO
 Bitcoin / UTXO Blockchain Implementation
 
-My Goal: Self-study on the underlying mechanism of BTC
+Goal: Self-study on the underlying mechanism of BTC
 
-My completed parts VS My unfinished parts
+Progress:
+
+Transaction / UTXO layer     █████████░ ~85%
+Block / mining layer         ██████░░░░ ~60%
+Consensus / networking       ░░░░░░░░░░ ~0%
+
+Completed parts VS Unfinished parts
 
 | Area | Status |
 |---|---|
