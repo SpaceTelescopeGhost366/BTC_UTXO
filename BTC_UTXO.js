@@ -3,7 +3,7 @@ const eclib = require('elliptic').ec         // Elliptic class
 const ec = new eclib('secp256k1')       // Library for public key and private key
 
 // Construct the block
-// Block = data + previous_hash + time_stamp + nonce(random number) + self_hash
+// Block =  previousHash + merkle_root + nonce + timestamp + difficulty
 // computeHash()
 // Validate_BLock_Transactions()
 // Mining(difficulty){}
@@ -21,7 +21,7 @@ class Block{
 
     // Compute the Hash value for current block
     computeHash(){
-        // Transaction has to be string rather than numerical expression
+    // Transaction has to be string rather than numerical expression
         return sha256(this.previousHash + this.merkle_root + this.nonce + this.timestamp + this.difficulty).toString()
     }
 
@@ -49,7 +49,6 @@ class Block{
         return layer[0]
 
     }
-
     // Prove the merkle root
     get_merkle_proof(txIndex){
 
@@ -187,7 +186,6 @@ class UTXO{
     }
 }
 
-
 // Transaction
 // constructor = inputs + outputs + timestamp
 // computeHash() 
@@ -234,7 +232,8 @@ class Transaction{
 
 
 // Chain
-// constructor = chain + transactionpool + minerReward + difficulty
+// constructor = chain + transactionpool + minerReward + difficulty + targetBlocktime 
+//               + adjustmentInterval + utxoset + users + fork_block + genesisUTXOs
 // Genisis Block
 // get_lastest_block
 // addTransaction 
@@ -260,10 +259,10 @@ class Chain{
 
     // Define the Genisis Block
     OG_block(){
-        const genesisBlock = new Block("I am the Genesis Block!", '', 0)
-        return genesisBlock
+        const genesisBlock = new Block("I am the Genesis Block!", '', 0);
+        return genesisBlock;
     }
-    // UTXOs initialization of Genesis Block
+    // UTXOs initialization of current block and Genesis Block
     Set_Genesis_UTXOs(utxos){
         // Current UTXO
         this.utxoset = utxos.map(
@@ -284,6 +283,7 @@ class Chain{
             )
         )
     }
+
     // Find the hash value of the lastest block
     get_lastest_block(){
         return this.chain[this.chain.length-1]
@@ -300,8 +300,7 @@ class Chain{
     }
     
     // Calculation for the fee rate
-    // more inputs -> more fee
-    // more outputs -> more fee
+    // more inputs/outputs -> more fee
     calculate_fee(inputs_num, outputs_num, fee_rate){
         const size = inputs_num * 68 + outputs_num * 36 + 10;
         return size * fee_rate;
@@ -312,10 +311,9 @@ class Chain{
     send(sender, receiver, amount){
         let selected_UTXOs = [];
         let total = 0;
+        let fee = 0;                  // Initialize the fee
         const fee_rate = 0.0001;      // Setup the fee_rate
-        let fee = 0;                 // Initialize the fee
         let required = 0;
-        
         
         for(let utxo of this.utxoset){
             if(utxo.owner === sender.publicKey){
@@ -377,27 +375,27 @@ class Chain{
 
     // Adjust the difficulty based on the mining time
     adjustDifficulty(){
-        const blockcount = this.chain.length - 1;                               // Length of the chain
+        const blockcount = this.chain.length - 1;                                    // Length of the chain
 
-        if(blockcount < this.adjustmentInterval){                               // If not enough number of block, skip
+        if(blockcount < this.adjustmentInterval){                                    // If not enough number of block, skip
             return;
         }
 
-        if(blockcount % this.adjustmentInterval !== 0){                         // Adjust only after specific number of blocks
+        if(blockcount % this.adjustmentInterval !== 0){                              // Adjust only after specific number of blocks
             return;
         }
 
-        const blocks = this.chain.slice(-this.adjustmentInterval);              // lastest cluster of blocks
+        const blocks = this.chain.slice(-this.adjustmentInterval);                   // lastest cluster of blocks
         
-        const first = blocks[0];                                                // First block in the cluster
-        const last = blocks[blocks.length-1];                                  // Last block in the cluster
-        const actualTime = last.timestamp - first.timestamp;                    // Interval of the mining
-        const expectedTime = (this.adjustmentInterval - 1) * this.targetBlocktime    // Expected time for mining
+        const first = blocks[0];                                                      // First block in the cluster
+        const last = blocks[blocks.length-1];                                        // Last block in the cluster
+        const actualTime = last.timestamp - first.timestamp;                          // Interval of the mining
+        const expectedTime = (this.adjustmentInterval - 1) * this.targetBlocktime;   // Expected time for mining
 
         // If actualtime < expect_time/2, this.difficulty++
         // else if actualtime > expect_time/2, this.math.Max(1, this.difficulty-1)
         if(actualTime < expectedTime/2){
-            this.difficulty++
+            this.difficulty++;
         }
         else if(actualTime > expectedTime * 2){
             this.difficulty = Math.max(1, this.difficulty-1);
@@ -561,16 +559,13 @@ class Chain{
             return false;
         }
         
-        // Already being spent in mempool?
+        // Already being spent ? in mempool ?
          const Used_UTXO = this.transactionpool.some(tx =>
             tx.inputs.some(poolInput =>
             poolInput.txHash === input.txHash &&
             poolInput.outputIndex === input.outputIndex
         )
         );
-
-        // Already being spent?
-
         if(Used_UTXO){
              console.log("UTXO already used in the pool!");
             return false;
@@ -648,14 +643,14 @@ class Chain{
         }
         // Check whether level of difficulty is the expected one
         if(block.difficulty !== this.difficulty){
-            console.log("Wrong difficulty");
+            console.log("Rejected: Wrong difficulty !");
             return false;
         }
 
         // 2. Block Integrity
         // Hash of the block
         if(block.hash !== block.computeHash()){
-            console.log("Rejected: Block hash has been modified!");
+            console.log("Rejected: Block hash has been modified !");
             return false;
         }
         // Whether the MerkleRoot can be spawned using the concluded tx?
@@ -769,9 +764,6 @@ class Chain{
         return true;
     };
 
-
-
-
     // Validate whether the current block is legitimate
     // previous_hash of current block equal to the hash in the previous hash
     Validatechain(){
@@ -811,6 +803,7 @@ class Chain{
         .filter(utxo => utxo.owner === user.publicKey)
         .reduce((sum, utxo) => sum + utxo.amount, 0);        
     }
+    
 
     // printer for the balance after each tx
     print_balance(){
@@ -960,7 +953,7 @@ console.log("Same tip after reorg:", reorgOK);
 console.log("\n=== REAL-TIME DIFFICULTY TEST ===");
 
 const START_DIFFICULTY = NodeA.difficulty;
-const ROUNDS = 24;
+const ROUNDS = 50;
 
 for(let i = 0; i < ROUNDS; i++){
 
@@ -1070,4 +1063,118 @@ console.log(
 );
 
 console.log("==============================");
+
+
+// // Forge the coin
+// const NodeA = new Chain();
+// const NodeB = new Chain();
+
+// console.log(NodeA.chain[0].hash);
+// console.log(NodeB.chain[0].hash);
+
+// console.log(NodeA.chain[0].hash == NodeB.chain[0].hash);
+
+
+
+// // Generate Users and miner
+// const Bob = new User("Bob")
+// const Alice = new User("Alice")
+// const Jacky = new User("Jacky")
+// const Miner = new User("Miner")
+
+// // Register everybody on the chain
+// NodeA.register_users(Bob);
+// NodeA.register_users(Alice);
+// NodeA.register_users(Jacky);
+// NodeA.register_users(Miner);
+
+// NodeB.register_users(Bob);
+// NodeB.register_users(Alice);
+// NodeB.register_users(Jacky);
+// NodeB.register_users(Miner);
+
+
+// // UTXO Initialization
+// const B_UTXO = new UTXO("Genesis-tx", 0, 100, Bob.publicKey);
+// const A_UTXO = new UTXO("Genesis-tx", 1, 100, Alice.publicKey);
+// const J_UTXO = new UTXO("Genesis-tx", 2, 100, Jacky.publicKey);
+// const genesisState = [B_UTXO, A_UTXO, J_UTXO];
+
+// // Node UTXO get its copy
+// NodeA.Set_Genesis_UTXOs(genesisState);
+// NodeB.Set_Genesis_UTXOs(genesisState);
+
+
+// console.log("Node A blocks:", NodeA.chain.length);
+// console.log("Node B blocks:", NodeB.chain.length);
+// console.log("Node A UTXOs:", NodeA.utxoset.length);
+// console.log("Node B UTXOs:", NodeB.utxoset.length);
+// // --------------
+// // Creating fork
+// // --------------
+
+
+// NodeA.send(Bob, Alice, 10);
+// NodeA.mineTransactionPool(Miner.publicKey);
+
+// NodeB.send(Jacky, Bob, 20);
+// NodeB.mineTransactionPool(Miner.publicKey);
+
+// NodeA.send(Jacky, Alice, 10);
+// NodeA.send(Alice, Bob, 4);
+// NodeA.send(Bob, Jacky, 6);
+// NodeA.mineTransactionPool(Miner.publicKey);
+
+
+// // ---------------------
+// // Before Sycrhonization
+// // ---------------------
+// console.log("A tip", NodeA.get_lastest_block().hash);
+// console.log("B tip", NodeB.get_lastest_block().hash);
+// console.log("Same tips before the sync", NodeA.get_lastest_block().hash === NodeB.get_lastest_block().hash);
+
+// // -----------------------------
+// // Node B receives branch from A
+// // -----------------------------
+
+
+// // Pass first block from nodeA to nodeB
+// NodeB.Receive_block(NodeA.chain[1]);
+// NodeB.Receive_block(NodeA.chain[2]);
+// NodeB.check_fork()
+// NodeB.Adopt_block()
+
+// // Adopt stronger branch
+
+// console.log("Node A blocks:", NodeA.chain.length);
+// console.log("Node B blocks:", NodeB.chain.length);
+
+// console.log("Same Tips:", 
+//     NodeA.get_lastest_block().hash === 
+//     NodeB.get_lastest_block().hash);
+// console.log("Node A UTXOs:", NodeA.utxoset.length);
+// console.log("Node B UTXOs:", NodeB.utxoset.length);
+
+
+// // Check the merkle root, whether it's right or wrong.
+// console.log("Merkle Root:", NodeA.chain[1].merkle_root);
+// console.log("Merkle root true or not: ", NodeA.chain[1].get_merkleroot() === NodeA.chain[1].merkle_root);
+
+// // Tamper txs in a block to see whether the merkle root is still valid
+// const test_block = NodeA.chain[2]
+// const targetIndex = 3;
+// const targetTx = test_block.transactions[targetIndex];
+
+// const proof = test_block.get_merkle_proof(targetIndex);
+
+// console.log("Merkle proof:", proof);
+// test_block.transactions.forEach((tx, i) =>{
+//     console.log(i, tx.computeHash());
+// });
+
+
+// console.log(
+//     "Merkle root proof:",
+
+//     test_block.verify_merkle_tree(targetTx, proof));
 
